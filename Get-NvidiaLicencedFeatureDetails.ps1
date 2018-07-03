@@ -7,7 +7,7 @@
 	Get-NvidiaLicencedFeatureDetails.ps1 | Where-Object {$_.FeatureName -eq "GRID-Virtual-PC" }
 .NOTES
 	File Name : Get-NvidiaLicencedFeatureDetails.ps1
-	Version   : v0.2
+	Version   : v0.3
 	Author    : John Billekens
 	Requires  : PowerShell v3 and up
 	            Nvidia License server v5.1.0 (Limited tested, but no guarantees)
@@ -70,10 +70,10 @@ try {
 				ID = $i
 				FeatureName = $FeatureName
 				Version = $Version
-				TotalCount = $TotalCount
-				Available = $Available 
-				CurrentUsage = $CurrentUsage
-				ReservedCount = $ReservedCount
+				TotalCount = [int]::Parse($TotalCount)
+				Available = [int]::Parse($Available)
+				CurrentUsage = [int]::Parse($CurrentUsage)
+				ReservedCount = [int]::Parse($ReservedCount)
 				VendorString = $VendorString
 				Uri = $Uri
 				CurrentUsageClients = $CurrentUsageClients
