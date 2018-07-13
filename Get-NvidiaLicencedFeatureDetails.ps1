@@ -60,7 +60,7 @@ try {
 				if ($FeaturesDaysLeft -lt 1) {
 					Write-Warning "License `"$FeatureName`" is expired!"
 				} elseif ($FeatureDaysLeft -lt 90) {
-					Write-Warning "License `"$FeatureName`", is expired in $FeaturesDaysLeft days!"
+					Write-Warning "The `"$FeatureName`" license will expire in $FeaturesDaysLeft days!"
 				}
 			} catch {
 				$FeaturesDaysLeft = -1
