@@ -7,7 +7,7 @@
 	Get-NvidiaLicencedFeatureDetails.ps1 | Where-Object {$_.FeatureName -eq "GRID-Virtual-PC" }
 .NOTES
 	File Name : Get-NvidiaLicencedFeatureDetails.ps1
-	Version   : v0.3
+	Version   : v0.4
 	Author    : John Billekens
 	Requires  : PowerShell v3 and up
 	            Nvidia License server v5.1.0 (Limited tested, but no guarantees)
@@ -53,6 +53,19 @@ try {
 			$CurrentUsage = (($Data | Select-String -pattern "CurrentUsage")  -split ",")[1]
 			$ReservedCount = (($Data | Select-String -pattern "ReservedCount")  -split ",")[1]
 			$VendorString = (($Data | Select-String -pattern "VendorString")  -split ",")[1]
+			$FeatureExpiry = (($Data | Select-String -pattern "FeatureExpiry")  -split ",")[1]
+			try {
+				$FeatureExpiry = [datetime]::Parse($FeatureExpiry)
+				$FeaturesDaysLeft = (New-TimeSpan –Start $(get-date) –End $FeatureExpiry).Days
+				if ($FeaturesDaysLeft -lt 1) {
+					Write-Warning "License `"$FeatureName`" is expired!"
+				} elseif ($FeatureDaysLeft -lt 90) {
+					Write-Warning "License `"$FeatureName`", is expired in $FeaturesDaysLeft days!"
+				}
+			} catch {
+				$FeaturesDaysLeft = -1
+			}
+			
 			$CurrentUsageClients = [PSCustomObject]@{
 				ClientID = [string]""
 				ClientIDType = [string]""
@@ -75,6 +88,8 @@ try {
 				CurrentUsage = [int]::Parse($CurrentUsage)
 				ReservedCount = [int]::Parse($ReservedCount)
 				VendorString = $VendorString
+				FeatureExpiry = $FeatureExpiry
+				FeatureDaysLeft = $FeaturesDaysLeft
 				Uri = $Uri
 				CurrentUsageClients = $CurrentUsageClients
 			}
