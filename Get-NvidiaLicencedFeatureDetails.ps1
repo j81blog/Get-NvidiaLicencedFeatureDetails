@@ -92,6 +92,8 @@ try {
 				Uri = $Uri
 				CurrentUsageClients = $CurrentUsageClients
 			}
+		} elseif($Data -like "*Error:*") {
+			break
 		}
 	}
 } catch {}
