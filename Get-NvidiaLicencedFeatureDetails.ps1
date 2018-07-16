@@ -58,7 +58,7 @@ try {
 				$FeaturesDaysLeft = (New-TimeSpan –Start $(get-date) –End $FeatureExpiry).Days
 				if ($FeaturesDaysLeft -lt 1) {
 					Write-Warning "License `"$FeatureName`" (ID: $i) is expired!"
-				} elseif ($FeatureDaysLeft -lt 90) {
+				} elseif ($FeaturesDaysLeft -lt 90) {
 					Write-Warning "The `"$FeatureName`" (ID: $i) license will expire in $FeaturesDaysLeft days!"
 				}
 			} catch {
