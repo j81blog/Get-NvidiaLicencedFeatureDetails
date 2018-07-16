@@ -23,7 +23,7 @@ param (
 )
 $LicencedFeatureDetails = @()
 try {
-	For ($i=1; $i -le 4; $i++) {
+	For ($i=1; $i -le 100; $i++) {
 		$Uri = "http://$($ServerFQDN):8080/licserver/manageFeatureUsage_featureDetails.action?feature.featureId=$($i)"
 		$WebResponse = Invoke-WebRequest -Uri $Uri
 		$Data = ((((($WebResponse.AllElements | Where-Object {$_.TagName -eq "TR"})[1].outerText)`
@@ -44,7 +44,6 @@ try {
 			-replace("`r`n`r`n","`r`n"))`
 			-split "`r`n") | ? {$_.trim() -ne "" })`
 			-replace(" ",",")
-		
 		$FeatureName = (($Data | Select-String -pattern "FeatureName")  -split ",")[1]
 		if (-not ($FeatureName -eq "")) {
 			$Version = (($Data | Select-String -pattern "Version")  -split ",")[1]
