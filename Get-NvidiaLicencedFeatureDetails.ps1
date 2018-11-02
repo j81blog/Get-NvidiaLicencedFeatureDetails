@@ -13,6 +13,8 @@
 	            Nvidia License server v5.1.0 (Limited tested, but no guarantees)
 .PARAMETER ServerFQDN
 	Specify the License server FQDN
+.PARAMETER ServerPort
+	Specify the License server Port
 .LINK
 	https://blog.j81.nl
 #>
