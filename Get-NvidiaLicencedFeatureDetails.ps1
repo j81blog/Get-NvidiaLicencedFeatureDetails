@@ -7,7 +7,6 @@
 	Get-NvidiaLicencedFeatureDetails.ps1 | Where-Object {$_.FeatureName -eq "GRID-Virtual-PC" }
 .NOTES
 	File Name : Get-NvidiaLicencedFeatureDetails.ps1
-	Version   : v0.5
 	Version   : v0.6
 	Author    : John Billekens
 	Requires  : PowerShell v3 and up
