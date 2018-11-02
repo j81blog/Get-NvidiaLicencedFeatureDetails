@@ -19,15 +19,17 @@
 
 [CmdletBinding()]
 param (
-	[string]$ServerFQDN = "localhost"
+	[string]$ServerFQDN = "localhost",
+
+	[string]$ServerPort = "8080"
 )
 $LicencedFeatureDetails = @()
 $ErrorLoopCount=0
 $DataFound = $false
 $MaxItems = 20
 try {
-	For ($i=1; $i -le 100; $i++) {
-		$Uri = "http://$($ServerFQDN):8080/licserver/manageFeatureUsage_featureDetails.action?feature.featureId=$($i)"
+	For ($i=1; $i -le $MaxItems; $i++) {
+		$Uri = "http://$($ServerFQDN):$($ServerPort)/licserver/manageFeatureUsage_featureDetails.action?feature.featureId=$($i)"
 		$WebResponse = Invoke-WebRequest -Uri $Uri
 		$Data = ((((($WebResponse.AllElements | Where-Object {$_.TagName -eq "TR"})[1].outerText)`
 			-replace(": `r`n     ",",")`
