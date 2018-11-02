@@ -22,6 +22,9 @@ param (
 	[string]$ServerFQDN = "localhost"
 )
 $LicencedFeatureDetails = @()
+$ErrorLoopCount=0
+$DataFound = $false
+$MaxItems = 20
 try {
 	For ($i=1; $i -le 100; $i++) {
 		$Uri = "http://$($ServerFQDN):8080/licserver/manageFeatureUsage_featureDetails.action?feature.featureId=$($i)"
@@ -46,6 +49,10 @@ try {
 			-replace(" ",",")
 		$FeatureName = (($Data | Select-String -pattern "FeatureName")  -split ",")[1]
 		if (-not ($FeatureName -eq "")) {
+			$DataFound = $true
+			if (($i + 1) -eq $MaxItems) {
+				$MaxItems = $MaxItems + 20
+			}
 			$Version = (($Data | Select-String -pattern "Version")  -split ",")[1]
 			$TotalCount = (($Data | Select-String -pattern "TotalCount")  -split ",")[1]
 			$Available = (($Data | Select-String -pattern "Available")  -split ",")[1]
@@ -92,8 +99,13 @@ try {
 				Uri = $Uri
 				CurrentUsageClients = $CurrentUsageClients
 			}
-		} elseif($Data -like "*Error:*") {
-			break
+		} elseif ($Data -like "*Error:*") {
+			if ($DataFound) {
+				$ErrorLoopCount++
+			}
+			if ($ErrorLoopCount -ge 20) {
+				break
+			}
 		}
 	}
 } catch {}
