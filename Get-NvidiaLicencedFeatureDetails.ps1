@@ -8,6 +8,7 @@
 .NOTES
 	File Name : Get-NvidiaLicencedFeatureDetails.ps1
 	Version   : v0.5
+	Version   : v0.6
 	Author    : John Billekens
 	Requires  : PowerShell v3 and up
 	            Nvidia License server v5.1.0 (Limited tested, but no guarantees)
