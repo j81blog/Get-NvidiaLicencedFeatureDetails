@@ -47,7 +47,7 @@ try {
 			-replace(" `r`n","`r`n").Trim()`
 			-replace("`r`n`r`n`r`n`r`nBack","`r`n")`
 			-replace("`r`n`r`n","`r`n"))`
-			-split "`r`n") | ? {$_.trim() -ne "" })`
+			-split "`r`n") | Where-Object {$_.trim() -ne "" })`
 			-replace(" ",",")
 		$FeatureName = (($Data | Select-String -pattern "FeatureName")  -split ",")[1]
 		if (-not ($FeatureName -eq "")) {
