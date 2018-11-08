@@ -4,10 +4,14 @@
 .DESCRIPTION
 	Get the Nvidia License Feature Details
 .EXAMPLE
+	Get-NvidiaLicencedFeatureDetails.ps1
+	View all license details 
+.EXAMPLE
 	Get-NvidiaLicencedFeatureDetails.ps1 | Where-Object {$_.FeatureName -eq "GRID-Virtual-PC" }
+	View all GRID-Virtual-PC licenses
 .NOTES
 	File Name : Get-NvidiaLicencedFeatureDetails.ps1
-	Version   : v0.6
+	Version   : v0.7
 	Author    : John Billekens
 	Requires  : PowerShell v3 and up
 	            Nvidia License server v5.1.0 (Limited tested, but no guarantees)
