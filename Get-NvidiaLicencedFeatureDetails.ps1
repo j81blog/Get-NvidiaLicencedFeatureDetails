@@ -11,65 +11,66 @@
 	View all GRID-Virtual-PC licenses
 .NOTES
 	File Name : Get-NvidiaLicencedFeatureDetails.ps1
-	Version   : v0.7
+	Version   : v1.0
 	Author    : John Billekens
-	Requires  : PowerShell v3 and up
-	            Nvidia License server v5.1.0 (Limited tested, but no guarantees)
-.PARAMETER ServerFQDN
-	Specify the License server FQDN
-.PARAMETER ServerPort
-	Specify the License server Port
+	Requires  : PowerShell v5 and up
+	            Nvidia License server
+.PARAMETER URI
+	Specify the License server URI
+    Default Value: http://localhost:8080/
+.PARAMETER MaxIDs
+	Specify the Max number of IDs being scanned, if you miss licenses, try to enter an higher ID (only for large companies or with multiple licenses)
+    Default Value: 20
 .LINK
 	https://blog.j81.nl
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = "URI")]
 param (
+	[Parameter(ParameterSetName = "URI", Position = 0, Mandatory = $false)]
+	[ValidatePattern('^(http[s]?)(:\/\/)([^\s,]+)')]
+	[System.URI]$URI = "http://localhost:8080/",
+
+	[Parameter(ParameterSetName = "Other", Mandatory = $false)]
+	[ValidateNotNullOrEmpty()]
+	[String]$Protocol = "http",
+
+	[Parameter(ParameterSetName = "Other", Mandatory = $false)]
+	[ValidateNotNullOrEmpty()]
 	[string]$ServerFQDN = "localhost",
 
-	[string]$ServerPort = "8080"
+	[Parameter(ParameterSetName = "Other", Mandatory = $false)]
+	[ValidateNotNullOrEmpty()]
+	[string]$ServerPort = "8080",
+
+	[Parameter(Mandatory = $false)]
+	[ValidateNotNullOrEmpty()]
+    [Int]$MaxIDs = 20
 )
+#requires -version 5.0
+
+if (-Not ($PSCmdlet.ParameterSetName -eq "URI")) {
+	Write-Warning "-Protocol, -ServerFQDN and -ServerPort are legacy parameters"
+    $URI = [System.URI]"{0}://{1}:{2}/" -f $Protocol, $ServerFQDN, $ServerPort
+}
 $LicencedFeatureDetails = @()
-$ErrorLoopCount=0
+$ErrorLoopCount = 0
 $DataFound = $false
-$MaxItems = 20
-try {
-	For ($i=1; $i -le $MaxItems; $i++) {
-		$Uri = "http://$($ServerFQDN):$($ServerPort)/licserver/manageFeatureUsage_featureDetails.action?feature.featureId=$($i)"
-		$WebResponse = Invoke-WebRequest -Uri $Uri
-		$Data = ((((($WebResponse.AllElements | Where-Object {$_.TagName -eq "TR"})[1].outerText)`
-			-replace(": `r`n     ",",")`
-			-replace(":  ",",")`
-			-replace("Client IDClient ID TypeClient TypeTotal Count ServedExpiry","ClientID,ClientIDType,ClientType,TotalCountServed,Expiry")`
-			-replace("Feature Name","FeatureName")`
-			-replace("Total count","TotalCount")`
-			-replace("Current Usage","CurrentUsage")`
-			-replace("Reserved Count","ReservedCount")`
-			-replace("Vendor String","VendorString")`
-			-replace("Feature Expiry","FeatureExpiry")`
-			-replace("   ","")`
-			-replace("      ","")`
-			-replace(" Back","")`
-			-replace(" `r`n","`r`n").Trim()`
-			-replace("`r`n`r`n`r`n`r`nBack","`r`n")`
-			-replace("`r`n`r`n","`r`n"))`
-			-split "`r`n") | Where-Object {$_.trim() -ne "" })`
-			-replace(" ",",")
-		$FeatureName = (($Data | Select-String -pattern "FeatureName")  -split ",")[1]
-		if (-not ($FeatureName -eq "")) {
-			$DataFound = $true
-			if (($i + 1) -eq $MaxItems) {
-				$MaxItems = $MaxItems + 20
-			}
-			$Version = (($Data | Select-String -pattern "Version")  -split ",")[1]
-			$TotalCount = (($Data | Select-String -pattern "TotalCount")  -split ",")[1]
-			$Available = (($Data | Select-String -pattern "Available")  -split ",")[1]
-			$CurrentUsage = (($Data | Select-String -pattern "CurrentUsage")  -split ",")[1]
-			$ReservedCount = (($Data | Select-String -pattern "ReservedCount")  -split ",")[1]
-			$VendorString = (($Data | Select-String -pattern "VendorString")  -split ",")[1]
-			$FeatureExpiry = (($Data | Select-String -pattern "FeatureExpiry")  -split ",")[1]
+For ($i = 1; $i -le $MaxIDs; $i++) {
+	try {
+		$URL = "{0}licserver/manageFeatureUsage_featureDetails.action?feature.featureId={1}&page=1" -f $URI.AbsoluteUri, $i
+		$Response = Invoke-WebRequest -UseBasicParsing -Uri $URL
+		$FeatureName = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=<a title=))(.+?(?==))=(.+?(?=>))').Matches.Groups[3].Value.Trim('"').Trim(' ') } catch { $null }
+		if (-not [String]::IsNullOrEmpty($FeatureName)) {
+			$Version = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=Version))(.+?(?=;));(.+?(?=<))').Matches.Groups[3].Value.Trim(' ') } catch { $null }
+			$TotalCount = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=Total count))(.+?(?=;));(.+?(?=<))').Matches.Groups[3].Value.Trim(' ') } catch { $null }
+			$Available = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=Available))(.+?(?=;));(.+?(?=<))').Matches.Groups[3].Value.Trim(' ') } catch { $null }
+			$CurrentUsage = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=Current Usage))(.+?(?=;));(.+?(?=<))').Matches.Groups[3].Value.Trim(' ') } catch { $null }
+			$ReservedCount = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=Reserved Count))(.+?(?=;));(.+?(?=<))').Matches.Groups[3].Value.Trim(' ') } catch { $null }
+			$VendorString = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=Vendor String))(.+?(?=;));(.+?(?=<))').Matches.Groups[3].Value.Trim(' ') } catch { $null }
+			$FeatureExpiry = try { ($Response.RawContent | Select-String -Pattern '(.+?(?=Feature Expiry))(.+?(?=;));(.+?(?= ))').Matches.Groups[3].Value.Trim(' ') } catch { $null }
 			try {
-				$FeatureExpiry = [datetime]::Parse($FeatureExpiry)
+				$FeatureExpiry = [DateTime]::Parse($FeatureExpiry)
 				$FeaturesDaysLeft = (New-TimeSpan –Start $(get-date) –End $FeatureExpiry).Days
 				if ($FeaturesDaysLeft -lt 1) {
 					Write-Warning "License `"$FeatureName`" (ID: $i) is expired!"
@@ -81,30 +82,33 @@ try {
 			}
 			
 			$CurrentUsageClients = [PSCustomObject]@{
-				ClientID = [string]""
-				ClientIDType = [string]""
-				ClientType = [string]""
+				ClientID         = [string]""
+				ClientIDType     = [string]""
+				ClientType       = [string]""
 				TotalCountServed = [Int32]0
-				Expiry = [Nullable[DateTime]]$null 
+				Expiry           = [Nullable[DateTime]]$null 
 			}
-			if ($Data | Select-String 'ClientID' -Context 0,999999 -ErrorAction SilentlyContinue -Quiet) {
-				$CurrentUsageClients = ($Data | Select-String 'ClientID' -Context 0,999999).ToString()`
-				-replace("> C","C")`
-				-Replace(" ","") | ConvertFrom-CSV -Delimiter "," | Select-Object ClientID,ClientIDType,ClientType,@{n='TotalCountServed'; e={$_.TotalCountServed -as [Int32]}},@{n='Expiry'; e={$_.Expiry -as [datetime]}}
-				
+			$Data = $Response.RawContent | Select-String -Pattern '(.+?(?=TRTableBorderBottom))((?s:.)+?(?=<a title=))(.+?(?=>))>(.+?(?=<))((?s:.)+?(?=<a title=))(.+?(?=>))>(.+?(?=<))((?s:.)+?(?=<a title=))(.+?(?=>))>(.+?(?=<))((?s:.)+?(?=[0-9]))([0-9])((?s:.)+?(?=[0-9]))([a-zA-Z0-9-:.]*)' -AllMatches -ErrorAction SilentlyContinue
+			$CurrentUsageClients = $Data | ForEach-Object { $_.Matches.Captures } | ForEach-Object { [PSCustomObject]@{
+					ClientID         = $_.groups[4].Value
+					ClientIDType     = $_.groups[7].Value
+					ClientType       = $_.groups[10].Value
+					TotalCountServed = $(try { [Int32]::Parse($($_.groups[12].Value)) } catch { $($_.groups[12].Value) })
+					Expiry           = $(try { [DateTime]::Parse($($_.groups[14].Value)) } catch { $($_.groups[14].Value) })
+				} 
 			}
 			$LicencedFeatureDetails += [PSCustomObject]@{
-				ID = $i
-				FeatureName = $FeatureName
-				Version = $Version
-				TotalCount = [int]::Parse($TotalCount)
-				Available = [int]::Parse($Available)
-				CurrentUsage = [int]::Parse($CurrentUsage)
-				ReservedCount = [int]::Parse($ReservedCount)
-				VendorString = $VendorString
-				FeatureExpiry = $FeatureExpiry
-				FeatureDaysLeft = $FeaturesDaysLeft
-				Uri = $Uri
+				ID                  = $i
+				FeatureName         = $FeatureName
+				Version             = $Version
+				TotalCount          = [int]::Parse($TotalCount)
+				Available           = [int]::Parse($Available)
+				CurrentUsage        = [int]::Parse($CurrentUsage)
+				ReservedCount       = [int]::Parse($ReservedCount)
+				VendorString        = $VendorString
+				FeatureExpiry       = $FeatureExpiry
+				FeatureDaysLeft     = $FeaturesDaysLeft
+				Uri                 = $URL
 				CurrentUsageClients = $CurrentUsageClients
 			}
 		} elseif ($Data -like "*Error:*") {
@@ -115,6 +119,8 @@ try {
 				break
 			}
 		}
+	} catch {
+		$ErrorLoopCount++
 	}
-} catch {}
+}
 return $LicencedFeatureDetails
