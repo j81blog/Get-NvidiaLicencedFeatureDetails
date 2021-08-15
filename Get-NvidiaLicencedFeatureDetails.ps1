@@ -32,6 +32,7 @@ param (
 
     [Parameter(ParameterSetName = "Other")]
     [ValidateNotNullOrEmpty()]
+    [ValidateSet('http','https')]
     [String]$Protocol = "http",
 
     [Parameter(ParameterSetName = "Other")]
